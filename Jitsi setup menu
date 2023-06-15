@@ -1,0 +1,135 @@
+ITSI SERVER CONFIGURATION
+
+Server - Standard B2s (2 vcpus, 4 GiB memory)
+Operating System - Linux (ubuntu 18.04 Bionic Beaver)
+Domain - telecon.eastus.cloudapp.azure.com (Domain A record should point to IP address of the server)
+User - Root user or a user with Sudo privilege
+
+The following ports need to be open in firewall, to allow traffic to the Jitsi Meet server:
+
+80 TCP - for SSL certificate verification / renewal with Let's Encrypt
+443 TCP - for general access to Jitsi Meet
+10000 UDP - for general network video/audio communications
+22 TCP - if you access you server using SSH (change the port accordingly if it's not 22)
+3478 UDP - for quering the stun server (coturn, optional, needs config.js change to enable it)
+5349 TCP - for fallback network video/audio communications over TCP (when UDP is blocked for example), served by coturn
+
+#Update the repositories.
+sudo apt update
+
+#This apt-transport-https allows the use of repositories accessed via the HTTP Secure protocol
+sudo apt install apt-transport-https
+
+#It allows you to easily manage your distribution and independent software vendor software sources
+sudo apt-get install software-properties-common
+
+#Universe repo is maintained by the greater Ubuntu community of users and developers.
+sudo apt-add-repository universe
+
+#This will add the jitsi repository to your package sources to make the Jitsi Meet packages available.
+curl https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
+echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | sudo tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
+sudo apt update
+
+#Server Firewall Configurations
+#Install ufw for easy management
+sudo apt-get install ufw
+
+#Opening ports in firewall
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 4443/tcp
+sudo ufw allow 10000/udp       --PLEASE MAKE SURE ITS UDP
+sudo ufw allow 22/tcp
+
+#Enable the firewall to start automatically on reboot
+sudo ufw enable
+
+#Verify ports are open.
+sudo ufw status verbose
+
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), deny (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+80/tcp                     ALLOW IN    Anywhere
+443/tcp                    ALLOW IN    Anywhere
+4443/tcp                   ALLOW IN    Anywhere
+10000/udp                  ALLOW IN    Anywhere
+22/tcp                     ALLOW IN    Anywhere
+80/tcp (v6)                ALLOW IN    Anywhere (v6)
+443/tcp (v6)               ALLOW IN    Anywhere (v6)
+4443/tcp (v6)              ALLOW IN    Anywhere (v6)
+10000/udp (v6)             ALLOW IN    Anywhere (v6)
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+
+#Install Jitsi Meet
+root@telecon:~# sudo apt install jitsi-meet
+Give your domain name - example.com
+Note- If third party ssl cert is present, select  "I want to use my own certificate"
+for letsencrypt, select "Generate a new self-signed certificate"
+
+#Letsencrypt ssl generating script. 
+This script will:
+- Need a working DNS record pointing to this machine(for domain telecon.medoment.com)
+- Download certbot-auto from https://dl.eff.org to /usr/local/sbin
+- Install additional dependencies in order to request Let’s Encrypt certificate
+- If running with jetty serving web content, will stop Jitsi Videobridge
+- Configure and reload nginx or apache2, whichever is used
+- Configure the coturn server to use Let's Encrypt certificate and add required deploy hooks
+- Add command in weekly cron job to renew certificates regularly
+
+sudo /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+
+#Delete once the port 80 access, once ssl is up and running
+sudo ufw delete allow 80/tcp
+
+#Restart services
+sudo systemctl restart prosody.service
+sudo systemctl restart jicofo.service
+sudo systemctl restart jitsi-videobridge2.service
+sudo systemctl restart nginx
+
+#Check the status
+sudo systemctl status prosody.service
+sudo systemctl status jicofo.service
+sudo systemctl status jitsi-videobridge2.service
+
+#changed watermark image name 
+root@telecon:/usr/share/jitsi-meet/images# mv watermark.png watermark_test.png
+
+#watch logs
+tail -F /var/log/jitsi/jicofo.log
+tail -F /var/log/prosody/prosody.log
+tail -F /var/log/nginx/error.log
+tail -F /var/log/jitsi/jvb.log
+
+#check versions
+root@telecon:~# dpkg -l | grep jitsi
+
+
+#Jitsi Authentication - Sache's request 
+https://crosstalksolutions.com/how-to-enable-jitsi-server-authentication/
+#This part is still pending. 
+
+sudo vim /etc/prosody/conf.avail/telecon.eastus.cloudapp.azure.com.cfg.lua
+
+authentication = "internal_plain"
+
+VirtualHost "guest.telecon.eastus.cloudapp.azure.com"
+    authentication = "anonymous"
+    c2s_require_encryption = false
+
+sudo vim /etc/jitsi/meet/telecon.eastus.cloudapp.azure.com-config.js
+anonymousdomain: 'guest.telecon.eastus.cloudapp.azure.com',
+
+sudo cat /etc/jitsi/jicofo/sip-communicator.properties
+org.jitsi.jicofo.auth.URL=XMPP:telecon.eastus.cloudapp.azure.com
+
+sudo prosodyctl register sache telecon.eastus.cloudapp.azure.com sache@3
+
+#Uninstall Jitsi
+https://jitsi.github.io/handbook/docs/devops-guide/devops-gu
