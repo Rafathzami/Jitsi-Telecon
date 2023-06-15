@@ -1,0 +1,49 @@
+In this you can find the path of the configuration files and the changes we did for latest Telecon server (Backup-Server)
+
+ 
+
+Config file path  -/etc/jitsi/meet/teleconback.medoment.com-config.js
+
+Changes in – teleconback.medoment.com-config.js
+
+Un comment the DisplayName=False
+
+filmstrip --> uncomment and disable the functions filmstrip:
+
+
+filmstrip: {    
+//     // Disables user resizable filmstrip. Also, allows configuration of the filmstrip   
+//     // (width, tiles aspect ratios) through the interfaceConfig options.        
+ disableResizable: false,
+//     // Disables the stage filmstrip
+//     // (displaying multiple participants on stage besides the vertical filmstrip)
+     disableStageFilmstrip: false,
+
+//     // Default number of participants that can be displayed on stage.
+//     // The user can change this in settings. Number must be between 1 and 6.
+     stageFilmstripParticipants: 1,
+
+//     // Disables the top panel (only shown when a user is sharing their screen).
+     disableTopPanel: false,
+
+//     // The minimum number of participants that must be in the call for
+//     // the top panel layout to be used.
+     minParticipantCountForTopPanel: 50,
+ },
+prejoinconfig --> enable the welcomepage & prejoin config  
+
+ enableWelcomePage: true,
+
+ prejoinConfig: {
+    //     // When 'true', it shows an intermediate page before joining, where the user can configure their devices.
+    //     // This replaces prejoinPageEnabled.
+        enabled: false,
+    //     // Hides the participant name editing field in the prejoin screen.
+    //     // If requireDisplayName is also set as true, a name should still be provided through
+    //     // either the jwt or the userInfo from the iframe api init object in order for this to have an effect.
+         hideDisplayName: true,
+    //     // List of buttons to hide from the extra join options dropdown.
+    //     hideExtraJoinButtons: ['no-audio', 'by-phone'],
+     },
+
+prejoinPageEnabled:false
