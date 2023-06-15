@@ -1,0 +1,25 @@
+Installing & Configure the Turn Server
+
+
+For the jisi meet we need a turn server to have meeting with large number of participants . From here we can  get the steps to installations and configurations
+
+Commands 
+
+sudo apt install coturn - #install the coturn
+
+sudo vim /etc/turnserver.conf #edit the configuration file for coturnserver
+
+sudo systemctl restart coturn  #Restart the coturn service
+
+Sudo vim /etc/jitsi/meet/teleconback.medoment.com-config.js
+
+p2p: {
+   stunServers: [
+      { urls: 'stun:Jitsi Meet :YOUR_STUN_PORT' },
+   ],
+   preferH264: true,
+   disableH264: true,
+   useStunTurn: true,
+},
+
+Restart the jitsi service files
